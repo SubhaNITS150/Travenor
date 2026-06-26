@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./travenor-server
+
+    container_name: travenor-backend
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      DATABASE_URL: postgresql://postgres:Subha@2910@host.docker.internal:5432/Travenor
+
+  frontend:
+    build:
+      context: ./travenor-frontend
+
+    container_name: travenor-frontend
+
+    ports:
+      - "8080:80"
+
+    depends_on:
+      - backend
