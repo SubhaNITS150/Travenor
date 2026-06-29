@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:travenor/features/meetanalysis/presentation/providers/meet_analysis_provider.dart';
 import 'package:travenor/features/meetanalysis/presentation/widgets/analysis_section.dart';
 import 'package:travenor/features/meetanalysis/presentation/widgets/custom_tabbar.dart';
 import 'package:travenor/features/meetanalysis/presentation/widgets/destination_card.dart';
@@ -8,11 +10,17 @@ import 'package:travenor/features/meetanalysis/presentation/widgets/overview_car
 import 'package:travenor/features/meetanalysis/presentation/widgets/preference_chip.dart';
 import 'package:travenor/features/preferences/presentation/screens/preferences_screen.dart';
 
-class MeetAnalysisScreen extends StatelessWidget {
-  const MeetAnalysisScreen({super.key});
+class MeetAnalysisScreen extends ConsumerWidget {
+  final String meetingId;
+
+  const MeetAnalysisScreen({super.key, required this.meetingId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final destinationsAsync = ref.watch(
+      discussedDestinationsProvider(meetingId),
+    );
+
     return Scaffold(
       backgroundColor: const Color(0xffF8F9FB),
       body: SafeArea(
@@ -26,9 +34,11 @@ class MeetAnalysisScreen extends StatelessWidget {
               const SizedBox(height: 20),
               const AnalysisSection(),
               const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: const Text(
+
+              //---------------------------- Quick Overview ---------------------------//
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
                   "Quick Overview",
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
                 ),
@@ -72,9 +82,11 @@ class MeetAnalysisScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: const Text(
+
+              //---------------------------- Top Preferences --------------------------//
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
                   "Top Preferences",
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
                 ),
@@ -93,39 +105,39 @@ class MeetAnalysisScreen extends StatelessWidget {
                           child: PreferenceChip(
                             title: "Mountains",
                             votes: 4,
-                            backgroundColor: Color(0xFFEAF8EF),
-                            textColor: Color(0xFF2E8B57),
+                            backgroundColor: const Color(0xFFEAF8EF),
+                            textColor: const Color(0xFF2E8B57),
                           ),
                         ),
-                        SizedBox(width: 10),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: PreferenceChip(
                             title: "Adventure Activities",
                             votes: 5,
-                            backgroundColor: Color(0xFFEEF2FF),
-                            textColor: Color(0xFF4F46E5),
+                            backgroundColor: const Color(0xFFEEF2FF),
+                            textColor: const Color(0xFF4F46E5),
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
                           child: PreferenceChip(
                             title: "3-4 Days Duration",
                             votes: 4,
-                            backgroundColor: Color(0xFFF3E8FF),
-                            textColor: Color(0xFF9333EA),
+                            backgroundColor: const Color(0xFFF3E8FF),
+                            textColor: const Color(0xFF9333EA),
                           ),
                         ),
-                        SizedBox(width: 10),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: PreferenceChip(
                             title: "Budget: ₹8k-₹12k",
                             votes: 5,
-                            backgroundColor: Color(0xFFFFF4E5),
-                            textColor: Color(0xFFF59E0B),
+                            backgroundColor: const Color(0xFFFFF4E5),
+                            textColor: const Color(0xFFF59E0B),
                           ),
                         ),
                       ],
@@ -134,33 +146,61 @@ class MeetAnalysisScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              Padding(
+
+              //---------------------------- Key Destinations -------------------------//
+              const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0),
-                child: const Text(
+                child: Text(
                   "Key Destinations Discussed",
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20),
                 ),
               ),
               const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: SizedBox(
-                  height: 160,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: const [
-                      DestinationCard(name: "Manali", mentions: 5),
-                      DestinationCard(name: "Shillong", mentions: 4),
-                      DestinationCard(name: "Kasol", mentions: 3),
-                      DestinationCard(name: "Auli", mentions: 2),
-                    ],
+              destinationsAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (err, _) => const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'Failed to load destinations.',
+                    style: TextStyle(color: Colors.red),
                   ),
                 ),
+                data: (destinations) {
+                  if (destinations.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('No destinations discussed yet.'),
+                    );
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: SizedBox(
+                      height: 160,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: destinations.length,
+                        itemBuilder: (context, index) {
+                          final dest = destinations[index];
+                          return DestinationCard(
+                            name: dest.name,
+                            mentions: dest.mentionCount,
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: const Text(
+
+              //---------------------------- Next Steps ------------------------------//
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
                   "Next Steps",
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 24),
                 ),
@@ -177,16 +217,17 @@ class MeetAnalysisScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const PreferencesScreen(),
+                        builder: (_) =>
+                            PreferencesScreen(meetingId: meetingId), 
                       ),
                     );
                   },
                 ),
               ),
               const SizedBox(height: 10),
-              Padding(
+              const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8.0),
-                child: const NextStepTile(
+                child: NextStepTile(
                   icon: Icons.edit_outlined,
                   title: "Customize preferences",
                   subtitle: "Adjust preferences for better recommendations",
@@ -194,15 +235,16 @@ class MeetAnalysisScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              Padding(
+              const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8.0),
-                child: const NextStepTile(
+                child: NextStepTile(
                   icon: Icons.share,
                   title: "Share with group",
                   subtitle: "Share summary and recommendations",
                   color: Colors.deepPurple,
                 ),
               ),
+              const SizedBox(height: 30),
             ],
           ),
         ),

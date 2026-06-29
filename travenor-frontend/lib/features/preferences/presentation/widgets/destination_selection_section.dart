@@ -1,52 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:travenor/features/meetanalysis/presentation/providers/meet_analysis_provider.dart';
 import 'package:travenor/features/preferences/presentation/widgets/destination_card.dart';
 
-class DestinationSelectionSection extends StatefulWidget {
-  const DestinationSelectionSection({super.key});
+class DestinationSelectionSection extends ConsumerStatefulWidget {
+  final String meetingId;
+
+  const DestinationSelectionSection({super.key, required this.meetingId});
 
   @override
-  State<DestinationSelectionSection> createState() =>
+  ConsumerState<DestinationSelectionSection> createState() =>
       _DestinationSelectionSectionState();
 }
 
 class _DestinationSelectionSectionState
-    extends State<DestinationSelectionSection> {
-  final List<Map<String, dynamic>> destinations = [
-    {
-      "name": "Manali",
-      "image":
-          "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23"
-    },
-    {
-      "name": "Delhi",
-      "image":
-          "https://images.unsplash.com/photo-1587474260584-136574528ed5"
-    },
-    {
-      "name": "Coimbatore",
-      "image":
-          "https://images.unsplash.com/photo-1599661046289-e31897846e41"
-    },
-    {
-      "name": "Jaipur",
-      "image":
-          "https://images.unsplash.com/photo-1477587458883-47145ed94245"
-    },
-    {
-      "name": "Himachal Pradesh",
-      "image":
-          "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee"
-    },
-  ];
-
-  final Set<int> selectedIndexes = {
-    0,
-    3,
-    4,
-  };
+    extends ConsumerState<DestinationSelectionSection> {
+  final Set<int> selectedIndexes = {};
 
   @override
   Widget build(BuildContext context) {
+    final destinationsAsync =
+        ref.watch(discussedDestinationsProvider(widget.meetingId));
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -74,30 +49,19 @@ class _DestinationSelectionSectionState
                   ),
                 ),
               ),
-
               const SizedBox(width: 14),
-
               const Expanded(
                 child: Text(
                   "Select Destinations",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                 ),
               ),
-
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(25),
                   color: const Color(0xffF5F3FF),
-                  border: Border.all(
-                    color: const Color(0xffC4B5FD),
-                  ),
+                  border: Border.all(color: const Color(0xffC4B5FD)),
                 ),
                 child: Text(
                   "${selectedIndexes.length} Selected",
@@ -107,54 +71,70 @@ class _DestinationSelectionSectionState
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              )
+              ),
             ],
           ),
-
           const SizedBox(height: 12),
-
           const Align(
             alignment: Alignment.centerLeft,
             child: Text(
               "Choose the destinations you want to include in your itinerary.",
-              style: TextStyle(
-                color: Color(0xff64748B),
-                fontSize: 15,
-              ),
+              style: TextStyle(color: Color(0xff64748B), fontSize: 15),
             ),
           ),
-
           const SizedBox(height: 20),
 
-          SizedBox(
-            height: 260,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: destinations.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(width: 16),
-              itemBuilder: (context, index) {
-                return DestinationCard(
-                  title: destinations[index]["name"],
-                  imageUrl: destinations[index]["image"],
-                  isSelected:
-                      selectedIndexes.contains(index),
-                  onTap: () {
-                    setState(() {
-                      if (selectedIndexes.contains(index)) {
-                        selectedIndexes.remove(index);
-                      } else {
-                        selectedIndexes.add(index);
-                      }
-                    });
-                  },
-                );
-              },
+          // ✅ real data from provider
+          destinationsAsync.when(
+            loading: () => const SizedBox(
+              height: 260,
+              child: Center(child: CircularProgressIndicator()),
             ),
+            error: (err, _) => const SizedBox(
+              height: 80,
+              child: Center(
+                child: Text(
+                  'Failed to load destinations.',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ),
+            data: (destinations) {
+              if (destinations.isEmpty) {
+                return const SizedBox(
+                  height: 80,
+                  child: Center(child: Text('No destinations discussed yet.')),
+                );
+              }
+
+              return SizedBox(
+                height: 260,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: destinations.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 16),
+                  itemBuilder: (context, index) {
+                    return DestinationCard(
+                      title: destinations[index].name,
+                      imageUrl: "https://picsum.photos/seed/${destinations[index].name}/300",
+                      isSelected: selectedIndexes.contains(index),
+                      onTap: () {
+                        setState(() {
+                          if (selectedIndexes.contains(index)) {
+                            selectedIndexes.remove(index);
+                          } else {
+                            selectedIndexes.add(index);
+                          }
+                        });
+                      },
+                    );
+                  },
+                ),
+              );
+            },
           ),
 
           const SizedBox(height: 18),
-
           Container(
             width: 120,
             height: 6,
@@ -172,7 +152,7 @@ class _DestinationSelectionSectionState
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );

@@ -5,4 +5,5 @@ class AudioResponse(BaseModel):
     locations: list[str]
 
 class AudioRequest(BaseModel):
+    meeting_id: str
     audio_path: str

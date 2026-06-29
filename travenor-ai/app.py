@@ -28,6 +28,4 @@ def create_itinerary(
 def extract_locations(
     request: AudioRequest
 ):
-    return process_audio(
-        request
-    )
+    return process_audio(request)
